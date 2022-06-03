@@ -233,18 +233,8 @@ void watcher_start(Watcher_Context_Example *watcher_context, const char **paths,
     CFRelease(cf_paths); // 'cf_paths' array was copied (apple loves duplicate data, isn't it) into FSStream somewhere, so we should release it.
     assert(watcher_context->fs_event_stream);
 
-
-
-    // Basically os's scheduler wants to know on which thread to call our callback. Or something like that.
-    // But since apple doesn't like threads (read above), it wants either a RunLoop or a DispatchQueue (read above).
-    // We pass it a queue, as passing runloop with 'FSEventStreamScheduleWithRunLoop' procedure is (or soon will be) deprecated.
-    //
-    // Note, that we start a FSEventStream from inside this queue to avoid races.
-    //
-    dispatch_queue_t dispatch_queue = dispatch_queue_create("MyFileWatcher", DISPATCH_QUEUE_SERIAL);
-    watcher_context->dispatch_queue = dispatch_queue;
-    dispatch_sync_f(dispatch_queue, watcher_context, (dispatch_function_t)dispatch_queue_start);
-    //
+    
+    
     // @trivia
     // Quote from apple's online documentation:
     //     Although threads have been around for many years and continue to have their uses,
@@ -257,4 +247,14 @@ void watcher_start(Watcher_Context_Example *watcher_context, const char **paths,
     // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html
     // https://developer.apple.com/documentation/dispatch
     // https://developer.apple.com/documentation/dispatch/dispatch_queue
+
+    // Basically os's scheduler wants to know on which thread to call our callback. Or something like that.
+    // But since apple doesn't like threads, it wants either a RunLoop or a DispatchQueue.
+    // We pass it a queue, as passing runloop with 'FSEventStreamScheduleWithRunLoop' procedure is (or soon will be) deprecated.
+    //
+    // Note, that we start a FSEventStream from inside this queue to avoid races.
+    //
+    dispatch_queue_t dispatch_queue = dispatch_queue_create("MyFileWatcher", DISPATCH_QUEUE_SERIAL);
+    watcher_context->dispatch_queue = dispatch_queue;
+    dispatch_sync_f(dispatch_queue, watcher_context, (dispatch_function_t)dispatch_queue_start);   
 }
